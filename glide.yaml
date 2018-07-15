@@ -1,0 +1,17 @@
+package: github.com/bc-class
+import:
+- package: bc-class/controller
+- package: bc-class/router
+- package: github.com/gomodule/redigo
+  version: ^2.0.0
+  subpackages:
+  - redis
+- package: github.com/julienschmidt/httprouter
+  version: ^1.1.0
+- package: github.com/urfave/negroni
+  version: ^0.3.0
+- package: k8s.io/client-go
+  version: ^8.0.0
+  subpackages:
+  - kubernetes
+  - rest
