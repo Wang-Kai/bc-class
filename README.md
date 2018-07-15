@@ -2,8 +2,9 @@
 
 ### API 文档
 
-#### 罗列所有课程环境
+#### 罗列所有课程环境
 URL:    /list/deployment
+
 Method: GET
 
 Response: 
@@ -22,6 +23,7 @@ Response:
 
 #### 处理一个用户的接入
 URL:    /access/:deployment/:user
+
 Method: GET
 
 Response:
