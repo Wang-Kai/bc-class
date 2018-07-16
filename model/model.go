@@ -8,14 +8,14 @@ type Deployment struct {
 
 type ListDeploymentResp struct {
 	Code    int32         `json:"code"`
-	Message string        `json:"message"`
+	Message string        `json:"message,omitempty"`
 	Data    []*Deployment `json:"data"`
 }
 
 // HandleAccess
 type HandleAccessResp struct {
 	Code    int32  `json:"code"`
-	Message string `json:"message"`
+	Message string `json:"message,omitempty"`
 	Data    *Pod   `json:"data"`
 }
 

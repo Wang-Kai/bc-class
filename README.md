@@ -3,9 +3,7 @@
 ### API 文档
 
 #### 罗列所有课程环境
-URL:    /list/deployment
-
-Method: GET
+**GET**:    /list/deployment
 
 Response: 
 ```js
@@ -22,9 +20,7 @@ Response:
 ```
 
 #### 处理一个用户的接入
-URL:    /access/:deployment/:user
-
-Method: GET
+**GET**:    /access/:deployment/:user
 
 Response:
 ```js
