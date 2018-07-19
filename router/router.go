@@ -11,8 +11,16 @@ func GenRouter() *httprouter.Router {
 
 	// list all service
 	router.GET("/list/deployment", controller.ListDeployment)
-	// scale a service
-	router.GET("/access/:deployment/:user", controller.HandleAccess)
+
+	// list all pods for deployment
+	router.GET("/list/pod/:deployment", controller.ListPods)
+
+	// scale deployment
+	router.GET("/scale/:deployment/:amount", controller.ScaleDeployment)
+
+	// delete pod
+	router.DELETE("/pod/:name", controller.DeletePod)
 
 	return router
+
 }

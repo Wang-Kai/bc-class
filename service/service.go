@@ -1,16 +1,14 @@
 package service
 
 import (
-	"errors"
+	"fmt"
 	"log"
 
-	"github.com/gomodule/redigo/redis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 
-	. "github.com/bc-class/db"
 	"github.com/bc-class/model"
 )
 
@@ -32,9 +30,6 @@ func init() {
 		log.Printf("create clientset error")
 		panic(err.Error())
 	}
-
-	// init redis db
-	InitRedis("[::]:6379")
 }
 
 // ListDeployment return all deployment for special namespace
@@ -50,59 +45,54 @@ func ListDeployment() (deployments []*model.Deployment, err error) {
 			Name:     d.Name,
 			Avalable: d.Status.AvailableReplicas,
 		}
-
 		deployments = append(deployments, tmpDeployment)
 	}
 
 	return
 }
 
-// HandleAccess scale deployent, and save user/podIP into redis
-func HandleAccess(deploymentName, user string) (*model.Pod, error) {
-	// scale deployment
-	retry.RetryOnConflict(retry.DefaultRetry, func() error {
+// ScaleDeployment scale deployment, make it plus amount
+func ScaleDeployment(name string, amount int32) error {
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		deploymentClient := clientset.AppsV1().Deployments(k8sNamespace)
-		deployment, getErr := deploymentClient.Get(deploymentName, metav1.GetOptions{})
+
+		deployment, getErr := deploymentClient.Get(name, metav1.GetOptions{})
 		if getErr != nil {
 			return getErr
 		}
 
-		deployment.Spec.Replicas = int32Ptr(*deployment.Spec.Replicas + 1)
+		deployment.Spec.Replicas = int32Ptr(*deployment.Spec.Replicas + amount)
+
 		_, updateErr := deploymentClient.Update(deployment)
 		return updateErr
 	})
+}
 
-	// find an idle IP
-	podsList, err := clientset.CoreV1().Pods(k8sNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, err
+// ListPods list all pod in special deployment
+func ListPods(deployment string) ([]*model.Pod, error) {
+	podList, listErr := clientset.CoreV1().Pods(k8sNamespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s", deployment),
+	})
+	if listErr != nil {
+		return nil, listErr
 	}
 
-	conn := Pool.Get()
-	defer conn.Close()
+	podArr := []*model.Pod{}
 
-	for _, pod := range podsList.Items {
-		ip, name := pod.Status.HostIP, pod.Name
-
-		exist, err := redis.Bool(conn.Do("HEXISTS", deploymentName, ip))
-		if err != nil {
-			return nil, err
+	for _, pod := range podList.Items {
+		tmpPod := &model.Pod{
+			Name: pod.Name,
+			IP:   pod.Status.HostIP,
 		}
-
-		if !exist {
-			_, err := conn.Do("HSET", deploymentName, ip, user)
-			if err != nil {
-				return nil, err
-			}
-
-			return &model.Pod{
-				Name: name,
-				IP:   ip,
-			}, nil
-		}
+		podArr = append(podArr, tmpPod)
 	}
 
-	return nil, errors.New("NoIdleIP")
+	return podArr, nil
+}
+
+// DeletePod delete a pod by pod name
+func DeletePod(pod string) error {
+	return clientset.CoreV1().Pods(k8sNamespace).Delete(pod, &metav1.DeleteOptions{})
 }
 
 func int32Ptr(i int32) *int32 {

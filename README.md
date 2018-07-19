@@ -19,18 +19,49 @@ Response:
 }
 ```
 
-#### 处理一个用户的接入
-**GET**:    /access/:deployment/:user
+#### 罗列一个 deployment 下面的 pod
+**GET**:    /list/pod/:deployment
+
+Response:
+```js
+{
+    "code":200,
+    "data":[
+        {
+            "name":"etherum-64b46fb57f-qvdwk",
+            "ip":"2002:ac1c:b401:1::2"
+        },
+        {
+            "name":"etherum-64b46fb57f-r98ng",
+            "ip":"2002:ac1c:b401:1::3"
+        },
+        {
+            "name":"etherum-64b46fb57f-szhzl",
+            "ip":"2002:ac1c:b401:1::3"
+        }
+    ]
+}
+```
+
+#### 删除一个 Pod
+**DELETE**:    /pod/:name
 
 Response:
 ```js
 {
     code: 200,
-    message: 'ok',
-    data: {
-        name: "bc-class-74b5bdb46f-44575",
-        ip: "2002:ac12:fed0:1::24"
-    }
+    message: 'Delete successful'
+}
+```
+
+#### 扩容 deployment
+**GET**:    /scale/:deployment/:amount
+
+Response:
+```js
+{
+    code: 200,
+    message: 'Scale successful'
 }
 ```
 
