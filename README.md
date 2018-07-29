@@ -2,6 +2,59 @@
 
 ### API 文档
 
+#### 创建 Deloyment
+**POST**:   /create/deployment
+
+Request:
+```js
+{
+    "name":"bc-class",  // deployment 名字，确保唯一性
+    "labels":{
+        "app":"bc-class"    // deployment 标签，其值最好与名字一致
+    },
+    "pod":{
+        "labels":{
+            "app":"bc-class"    // pod 标签，其值最好与 deployment 名字一致
+        },
+        "containers":[      // 容器数组
+            {
+                "name":"novnc",  // required
+                "image":"uhub.service.ucloud.cn/safehouse/novnc",    // required
+                "command":[
+                    "/bin/sh"
+                ],
+                "args":[
+                    "-c",
+                    "/usr/src/app/noVNC/utils/launch.sh --vnc localhost:5091"
+                ],
+                "containerPorts":[
+                    {
+                        "container_port":6080    // required
+                    }
+                ]
+            },
+            {
+                "name":"ubuntu-xfce-vnc",
+                "image":"uhub.service.ucloud.cn/safehouse/ubuntu-xfce-vnc",
+                "containerPorts":[
+                    {
+                        "container_port":5901
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+Response: 
+```js
+{
+    "code": 200,
+    "message": "Create successful"
+}
+```
+
 #### 罗列所有课程环境
 **GET**:    /list/deployment
 
