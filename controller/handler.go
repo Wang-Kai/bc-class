@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -10,6 +11,30 @@ import (
 	"github.com/bc-class/service"
 	"github.com/bc-class/utils"
 )
+
+func CreateDeployment(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	// package request body into struct
+	deploymentConf := &model.DeploymentConf{}
+	reqBody, _ := r.Context().Value("reqBody").([]byte)
+
+	err := json.Unmarshal(reqBody, deploymentConf)
+	if err != nil {
+		utils.RespMsg(w, r, err)
+		return
+	}
+
+	// call service to create deployment
+	err = service.CreateDeployment(deploymentConf)
+	if err != nil {
+		utils.RespMsg(w, r, err)
+		return
+	}
+
+	utils.RespMsg(w, r, &model.CommonResp{
+		Code:    utils.OK,
+		Message: "Create successful",
+	})
+}
 
 func DeletePod(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	pod := params.ByName("name")

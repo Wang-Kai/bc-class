@@ -21,6 +21,9 @@ func GenRouter() *httprouter.Router {
 	// delete pod
 	router.DELETE("/pod/:name", controller.DeletePod)
 
+	// create deployment
+	router.POST("/create/deployment", controller.CreateDeployment)
+
 	return router
 
 }

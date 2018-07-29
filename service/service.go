@@ -1,9 +1,12 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
 
+	"github.com/apex/log"
+	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -21,15 +24,72 @@ func init() {
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Printf("create in-cluster config error")
+		log.Error("create in-cluster config error")
 		panic(err.Error())
 	}
 	// creates the clientset
 	clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Printf("create clientset error")
+		log.Error("create clientset error")
 		panic(err.Error())
 	}
+}
+
+// CreateDeployment create deployment in k8s
+func CreateDeployment(deploymentConf *model.DeploymentConf) (err error) {
+	// generate Container
+	var containerArr = make([]apiv1.Container, len(deploymentConf.Pod.Containers))
+
+	for index, containerConf := range deploymentConf.Pod.Containers {
+		// generate ContainerPorts for this container
+		var containerPortArr = make([]apiv1.ContainerPort, len(containerConf.ContainerPorts))
+		for index, containerPortConf := range containerConf.ContainerPorts {
+			containerPortArr[index] = apiv1.ContainerPort{
+				Name:          containerPortConf.Name,
+				ContainerPort: containerPortConf.ContainerPort,
+			}
+		}
+
+		containerArr[index] = apiv1.Container{
+			Name:    containerConf.Name,
+			Image:   containerConf.Image,
+			Ports:   containerPortArr,
+			Command: containerConf.Command,
+			Args:    containerConf.Args,
+		}
+	}
+
+	body, _ := json.Marshal(containerArr)
+	log.Infof("%s", body)
+
+	// generate a deployment struct by deployment config
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploymentConf.Name,
+			Namespace: k8sNamespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: deploymentConf.Labels,
+			},
+			Template: apiv1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: deploymentConf.Pod.Labels,
+				},
+				Spec: apiv1.PodSpec{
+					Containers: containerArr,
+				},
+			},
+		},
+	}
+
+	deploymentClient := clientset.AppsV1().Deployments(k8sNamespace)
+	_, err = deploymentClient.Create(deployment)
+	if err != nil {
+		log.WithError(err).Error("CreateDeploymentError")
+	}
+
+	return
 }
 
 // ListDeployment return all deployment for special namespace
@@ -82,7 +142,7 @@ func ListPods(deployment string) ([]*model.Pod, error) {
 	for _, pod := range podList.Items {
 		tmpPod := &model.Pod{
 			Name: pod.Name,
-			IP:   pod.Status.HostIP,
+			IP:   pod.Status.PodIP,
 		}
 		podArr = append(podArr, tmpPod)
 	}
